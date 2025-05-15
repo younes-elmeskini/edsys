@@ -1,15 +1,18 @@
 import { Router } from 'express';
 import UserController from '../controllers/UserController';
+import { authenticate } from '../middlewares/auth';
 
 
 
 const router = Router();
-router.post('/adduser', UserController.createUser);
-// router.post('/adduser', (req, res, next) => UserController.createUser(req, res, next));
+
 router.post('/login', UserController.login);
-// GET /users
+router.post('/create', UserController.createUser);
 router.post('/logout', UserController.logout);
-router.get('/users', UserController.getUser);
+// GET /users
+router.get('/', UserController.getUser);
+router.get('/me',authenticate, UserController.userData);
+
 
 
 export default router;
