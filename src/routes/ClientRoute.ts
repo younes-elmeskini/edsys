@@ -4,6 +4,6 @@ import { authenticate } from '../middlewares/auth';
 
 const router = Router();
 
-router.post('/add', authenticate, ClientController.addClient);
+router.post('/add', ClientController.addClient);
 
 export default router;

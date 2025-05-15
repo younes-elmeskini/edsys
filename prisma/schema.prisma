@@ -39,68 +39,68 @@ model User {
 }
 
 model Client {
-  clientId     String   @id @default(cuid())
+  clientId      String          @id @default(cuid())
   firstName     String?
-  lastName     String?
-  phone        Int?
-  email        String?  @unique
-  education    String?
-  Status       Status
-  academicYear String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  lastName      String?
+  phone         Int?
+  email         String?         @unique
+  education     String?
+  Status        Status
+  academicYear  String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   self_employed self_employed[]
-  Further Further[]
-  searching searching[]
-  Recruited Recruited[]
+  Further       Further[]
+  searching     searching[]
+  Recruited     Recruited[]
 }
 
 model Recruited {
-  recruitedId     String   @id @default(cuid())
-  title          String?
-  campany        String?
-  position       String?
-  startYear String?
-  workCity           String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  clieantId      String?
-  client         Client? @relation(fields: [clieantId], references: [clientId])
+  recruitedId String   @id @default(cuid())
+  title       String?
+  campany     String?
+  position    String?
+  startYear   String?
+  workCity    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [clientId])
 }
 
 model Further {
-  futherId    String  @id @default(cuid())
+  futherId  String   @id @default(cuid())
   school    String?
   furtherEd String?
   city      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  claientId String?
-  client    Client? @relation(fields: [claientId], references: [clientId])
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [clientId])
 }
 
 model self_employed {
-  employedId    String   @id @default(cuid())
+  employedId   String   @id @default(cuid())
   selfEmployed String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  clieantId   String?
-  client      Client? @relation(fields: [clieantId], references: [clientId])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clientId     String?
+  client       Client?  @relation(fields: [clientId], references: [clientId])
 }
 
 model searching {
-  searchId String   @id @default(cuid())
-  duration    String?
+  searchId  String   @id @default(cuid())
+  duration  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  celientId String?
-  client    Client? @relation(fields: [celientId], references: [clientId])
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [clientId])
 }
 
 model resetToken {
-  resetTokenId        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  expiredAt DateTime 
-  user      User     @relation(fields: [userId], references: [userId])
+  resetTokenId String   @id @default(cuid())
+  token        String   @unique
+  userId       String
+  expiredAt    DateTime
+  user         User     @relation(fields: [userId], references: [userId])
 }
