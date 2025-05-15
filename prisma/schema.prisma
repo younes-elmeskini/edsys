@@ -64,8 +64,8 @@ model Recruited {
   workCity    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  clientId    String?
-  client      Client?  @relation(fields: [clientId], references: [clientId])
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model Further {
@@ -75,8 +75,8 @@ model Further {
   city      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  clientId  String?
-  client    Client?  @relation(fields: [clientId], references: [clientId])
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model self_employed {
@@ -84,8 +84,8 @@ model self_employed {
   selfEmployed String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  clientId     String?
-  client       Client?  @relation(fields: [clientId], references: [clientId])
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model searching {
@@ -93,8 +93,8 @@ model searching {
   duration  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  clientId  String?
-  client    Client?  @relation(fields: [clientId], references: [clientId])
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model resetToken {
