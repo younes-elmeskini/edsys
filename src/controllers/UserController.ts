@@ -145,14 +145,20 @@ export default class UserController {
         res.status(401).json({ message: "Unauthorized" });
         return;
       }
-      const user = await prisma.user.findUnique({
+      const data = await prisma.user.findUnique({
         where: { userId },
+        select: {
+          userId: true,
+          userName: true,
+          role: true,
+          avatar: true,
+        },
       });
-      if (!user) {
+      if (!data) {
         res.status(404).json({ message: "User not found" });
         return;
       }
-      res.status(200).json(user);
+      res.status(200).json(data);
     } catch (error) {
       console.error("Error fetching user data:", error);
       res.status(500).json({ message: "Internal server error" });
