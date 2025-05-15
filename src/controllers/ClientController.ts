@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/client";
 import { z } from "zod";
 import { Status } from "@prisma/client";
-export const addClientSchema = z.object({
+export const ClientSchema = z.object({
   firstName: z.string().min(3),
   lastName: z.string().min(3),
   email: z.string().email(),
@@ -20,7 +20,7 @@ export const addClientSchema = z.object({
   selfEmployed: z.string().optional(),
   duration: z.string().optional(),
 });
-type AddClientInput = z.infer<typeof addClientSchema>;
+type ClientInput = z.infer<typeof ClientSchema>;
 
 export default class ClientController {
   static async addClient(req: Request, res: Response): Promise<any> {
@@ -42,7 +42,7 @@ export default class ClientController {
         furtherEd,
         selfEmployed,
         duration,
-      }: AddClientInput = addClientSchema.parse(req.body);
+      }: ClientInput = ClientSchema.parse(req.body);
       const clientExists = await prisma.client.findUnique({
         where: { email },
       });
