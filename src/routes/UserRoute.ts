@@ -11,7 +11,7 @@ router.post('/create', UserController.createUser);
 router.post('/logout', UserController.logout);
 router.post('/forgotpassword', UserController.forgetPassword);
 router.post('/resetpassword', UserController.resetPassword);
-// GET /users
+// GET 
 router.get('/users', UserController.getUser);
 router.get('/me',authenticate, UserController.userData);
 

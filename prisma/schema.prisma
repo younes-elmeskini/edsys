@@ -40,9 +40,9 @@ model User {
 
 model Client {
   clientId     String   @id @default(cuid())
-  fistName     String?
+  firstName     String?
   lastName     String?
-  phone        String?
+  phone        Int?
   email        String?  @unique
   education    String?
   Status       Status
