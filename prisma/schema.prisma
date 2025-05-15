@@ -34,6 +34,8 @@ model User {
   avatar    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  resetToken resetToken[]
 }
 
 model Client {
@@ -93,4 +95,12 @@ model searching {
   updatedAt DateTime @updatedAt
   celientId String?
   client    Client? @relation(fields: [celientId], references: [clientId])
+}
+
+model resetToken {
+  resetTokenId        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiredAt DateTime 
+  user      User     @relation(fields: [userId], references: [userId])
 }

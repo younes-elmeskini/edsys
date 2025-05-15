@@ -9,8 +9,10 @@ const router = Router();
 router.post('/login', UserController.login);
 router.post('/create', UserController.createUser);
 router.post('/logout', UserController.logout);
+router.post('/forgotpassword', UserController.forgetPassword);
+router.post('/resetpassword', UserController.resetPassword);
 // GET /users
-router.get('/', UserController.getUser);
+router.get('/users', UserController.getUser);
 router.get('/me',authenticate, UserController.userData);
 
 

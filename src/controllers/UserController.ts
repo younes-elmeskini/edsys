@@ -3,7 +3,9 @@ import prisma from "../prisma/client";
 import { z } from "zod";
 import * as argon2 from "argon2";
 import jwt from "jsonwebtoken";
-import { User } from "@prisma/client";
+import { User, resetToken } from "@prisma/client";
+import transporter from "../utils/mailer";
+import crypto from "crypto";
 
 const createUserSchema = z.object({
   userName: z.string().min(3),
@@ -19,6 +21,18 @@ export const loginSchema = z.object({
     .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
 });
 type LoginUserInput = z.infer<typeof loginSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  newPassword: z
+    .string()
+    .min(10),
+});
+type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export const forgetPasswordSchema = z.object({
+  email: z.string().email("Email invalide"),
+});
+type ForgetPasswordInput = z.infer<typeof forgetPasswordSchema>;
 
 export default class UserController {
   static async createUser(
@@ -144,7 +158,73 @@ export default class UserController {
       res.status(500).json({ message: "Internal server error" });
     }
   }
+  static async forgetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<any> {
+    try {
+      const { email }:ForgetPasswordInput = forgetPasswordSchema.parse(req.body);
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });;
+      }
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const expiredAt = new Date(Date.now() + 60 * 60 * 1000);
 
+      const token:resetToken = await prisma.resetToken.create({
+        data: {
+          token: resetToken,
+          expiredAt: expiredAt,
+          userId: user.userId,
+        },
+      });
+      const resetUrl = `http://localhost:4000/reset-password/${resetToken}`;
+
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: "Réinitialisation de mot de passe",
+        html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">${resetUrl}</a></p>`,
+      });
+      return res.status(200).json({ message: "Password reset token sent", token });
+    } catch (error) {
+      console.error("Error in forgetPassword:", error);
+      return res.status(500).json({ message: "Internal server error" });
+      ;
+    }
+  }
+
+  static async resetPassword(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    const { token, newPassword }:ResetPasswordInput = resetPasswordSchema.parse(req.body);
+    const resetToken = await prisma.resetToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+    if (!resetToken) {
+      res.status(404).json({ message: "Invalid or expired token" });
+      return;
+    }
+    if (resetToken.expiredAt < new Date()) {
+      res.status(400).json({ message: "Token expired" });
+      return;
+    }
+    const hashedPassword = await argon2.hash(newPassword);
+    await prisma.user.update({
+      where: { userId: resetToken.userId },
+      data: { password: hashedPassword },
+    });
+    await prisma.resetToken.delete({
+      where: { token },
+    });
+    res.status(200).json({ message: "Password reset successful" });
+  }
   static async getUser(
     req: Request,
     res: Response,
@@ -153,12 +233,8 @@ export default class UserController {
     const users = await prisma.user.findMany();
     res.json(users);
   }
-  static async logout(
-    req: Request,
-    res: Response,
-  ) {
+  static async logout(req: Request, res: Response) {
     res.clearCookie("token");
     res.status(200).json({ message: "Logout successful" });
   }
-
 }
