@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { User, resetToken } from "@prisma/client";
 import transporter from "../utils/mailer";
 import crypto from "crypto";
+import { generateToken } from "../middlewares/auth";
 
 const createUserSchema = z.object({
   userName: z.string().min(3),
@@ -19,14 +20,13 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+    stay: z.boolean().optional().default(false),
 });
 type LoginUserInput = z.infer<typeof loginSchema>;
 
 export const resetPasswordSchema = z.object({
   token: z.string(),
-  newPassword: z
-    .string()
-    .min(10),
+  newPassword: z.string().min(10),
 });
 type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export const forgetPasswordSchema = z.object({
@@ -98,20 +98,17 @@ export default class UserController {
       if (!process.env.JWT_SECRET) {
         throw new Error("JWT_SECRET must be defined in environment variables");
       }
-      const token = jwt.sign(
-        {
-          userId: user.userId,
-          role: user.role,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
-      );
-
+      const token = generateToken(user);
+      if (!token) {
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
+      }
+      const maxAge = parsedData.stay === true ?15 * 24 * 60 * 60 * 1000  : 24 * 60 * 60 * 1000 ;
       res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 3600000,
+        httpOnly: process.env.NODE_ENV === "production",
+        secure: process.env.NODE_ENV === "production", // Only require HTTPS in production
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: maxAge,
         path: "/",
       });
       res.status(200).json({
@@ -145,7 +142,7 @@ export default class UserController {
         res.status(401).json({ message: "Unauthorized" });
         return;
       }
-      const data = await prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { userId },
         select: {
           userId: true,
@@ -154,11 +151,11 @@ export default class UserController {
           avatar: true,
         },
       });
-      if (!data) {
+      if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
-      res.status(200).json(data);
+      res.status(200).json({ data: user });
     } catch (error) {
       console.error("Error fetching user data:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -170,17 +167,19 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
-      const { email }:ForgetPasswordInput = forgetPasswordSchema.parse(req.body);
+      const { email }: ForgetPasswordInput = forgetPasswordSchema.parse(
+        req.body
+      );
       const user = await prisma.user.findUnique({
         where: { email },
       });
       if (!user) {
-        return res.status(404).json({ message: "User not found" });;
+        return res.status(404).json({ message: "User not found" });
       }
       const resetToken = crypto.randomBytes(32).toString("hex");
       const expiredAt = new Date(Date.now() + 60 * 60 * 1000);
 
-      const token:resetToken = await prisma.resetToken.create({
+      const token: resetToken = await prisma.resetToken.create({
         data: {
           token: resetToken,
           expiredAt: expiredAt,
@@ -195,11 +194,12 @@ export default class UserController {
         subject: "Réinitialisation de mot de passe",
         html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">${resetUrl}</a></p>`,
       });
-      return res.status(200).json({ message: "Password reset token sent", token });
+      return res
+        .status(200)
+        .json({ message: "Password reset token sent", token });
     } catch (error) {
       console.error("Error in forgetPassword:", error);
       return res.status(500).json({ message: "Internal server error" });
-      ;
     }
   }
 
@@ -208,7 +208,8 @@ export default class UserController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    const { token, newPassword }:ResetPasswordInput = resetPasswordSchema.parse(req.body);
+    const { token, newPassword }: ResetPasswordInput =
+      resetPasswordSchema.parse(req.body);
     const resetToken = await prisma.resetToken.findUnique({
       where: { token },
       include: { user: true },

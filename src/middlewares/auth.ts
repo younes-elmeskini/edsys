@@ -6,6 +6,20 @@ interface JwtPayload {
   userId: String;
   role: string;
 }
+export const generateToken = (user: User): string => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET must be defined");
+  }
+  const token = jwt.sign(
+    {
+      userId: user.userId,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+  return token;
+};
 
 export const authenticate = (
   req: Request,
