@@ -58,7 +58,7 @@ model Client {
 
 model Eduction {
   educationId   String   @id @default(cuid())
-  educationName String   
+  educationName String
   Client        Client[]
 }
 
