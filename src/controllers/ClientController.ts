@@ -9,7 +9,7 @@ export const ClientSchema = z.object({
   phone: z.number().min(10),
   educationId: z.string().min(6),
   academicYear: z.string().min(4),
-  Status: z.enum(Object.values(Status) as [string, ...string[]]),
+  status: z.enum(Object.values(Status) as [string, ...string[]]),
   title: z.string().optional(),
   campany: z.string().optional(),
   position: z.string().optional(),
@@ -32,7 +32,7 @@ export default class ClientController {
         phone,
         educationId,
         academicYear,
-        Status,
+        status,
         title,
         campany,
         position,
@@ -57,12 +57,12 @@ export default class ClientController {
           phone,
           educationId,
           academicYear,
-          Status: Status as Status,
+          Status: status as Status,
         },
       });
-      let status;
-      if (Status === "RECRUITED") {
-        status = await prisma.recruited.create({
+      let Status;
+      if (status === "RECRUITED") {
+        Status = await prisma.recruited.create({
           data: {
             clientId: client.clientId,
             title,
@@ -73,8 +73,8 @@ export default class ClientController {
           },
         });
       }
-      if (Status === "FARTHER") {
-        status = await prisma.further.create({
+      if (status === "FARTHER") {
+        Status = await prisma.further.create({
           data: {
             clientId: client.clientId,
             school,
@@ -83,16 +83,16 @@ export default class ClientController {
           },
         });
       }
-      if (Status === "EMPLOYED") {
-        status = await prisma.self_employed.create({
+      if (status === "EMPLOYED") {
+        Status = await prisma.self_employed.create({
           data: {
             clientId: client.clientId,
             selfEmployed,
           },
         });
       }
-      if (Status === "SEARCHING") {
-        status = await prisma.searching.create({
+      if (status === "SEARCHING") {
+        Status = await prisma.searching.create({
           data: {
             clientId: client.clientId,
             duration,
@@ -102,7 +102,7 @@ export default class ClientController {
       return res.status(201).json({
         message: "Client created successfully",
         client,
-        status: status ? status : null,
+        status: Status ? status : null,
       });
     } catch (error) {
       console.error(error);
@@ -200,7 +200,7 @@ export default class ClientController {
         phone,
         educationId,
         academicYear,
-        Status,
+        status,
         title,
         campany,
         position,
@@ -235,7 +235,7 @@ export default class ClientController {
           phone,
           educationId,
           academicYear,
-          Status: Status as Status,
+          Status: status as Status,
         },
       });
       await Promise.all([
@@ -245,10 +245,10 @@ export default class ClientController {
         prisma.searching.deleteMany({ where: { clientId } }),
       ]);
 
-      let status;
+      let Status;
 
-      if (Status === "RECRUITED") {
-        status = await prisma.recruited.create({
+      if (status === "RECRUITED") {
+        Status = await prisma.recruited.create({
           data: {
             clientId,
             title,
@@ -258,8 +258,8 @@ export default class ClientController {
             workCity: city,
           },
         });
-      } else if (Status === "FARTHER") {
-        status = await prisma.further.create({
+      } else if (status === "FARTHER") {
+        Status = await prisma.further.create({
           data: {
             clientId,
             school,
@@ -267,15 +267,15 @@ export default class ClientController {
             city,
           },
         });
-      } else if (Status === "EMPLOYED") {
-        status = await prisma.self_employed.create({
+      } else if (status === "EMPLOYED") {
+        Status = await prisma.self_employed.create({
           data: {
             clientId,
             selfEmployed,
           },
         });
-      } else if (Status === "SEARCHING") {
-        status = await prisma.searching.create({
+      } else if (status === "SEARCHING") {
+        Status = await prisma.searching.create({
           data: {
             clientId,
             duration,
