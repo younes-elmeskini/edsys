@@ -111,7 +111,36 @@ export default class ClientController {
   }
   static async getClient(req: Request, res: Response): Promise<any> {
     try {
+      const search = req.query.search as string ;
+      const page = parseInt(req.query.page as string) || 1; 
+      const pageSize = 2
+      const skip = (page - 1) * pageSize;
+
+      let whereClause: any = {
+        deletedAt: null,
+      };
+
+      if (search) {
+        whereClause = {
+          ...whereClause,
+          OR: [
+            { firstName: { contains: search, mode: "insensitive" } },
+            { lastName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
+        };
+      }
+      const totalClients = await prisma.client.count({
+        where: whereClause,
+      });
+      const totalPages = Math.ceil(totalClients / pageSize);
+      if (page > totalPages) {
+        return res.status(404).json({ message: "No more clients" });
+      }
       const clients = await prisma.client.findMany({
+        where: whereClause,
+        skip: skip,
+        take: pageSize,
         select: {
           clientId: true,
           firstName: true,
@@ -149,7 +178,13 @@ export default class ClientController {
           },
         },
       });
-      return res.status(200).json(clients);
+      return res.status(200).json({
+        data: clients,
+        pagination: {
+          currentPage: page,
+          totalPages: totalPages,
+        }
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error", error });
@@ -264,8 +299,8 @@ export default class ClientController {
       const client = await prisma.client.update({
         where: { clientId },
         data: {
-            deletedAt: new Date(),
-        }
+          deletedAt: new Date(),
+        },
       });
       return res.status(200).json({
         message: "Client deleted successfully",
@@ -276,5 +311,4 @@ export default class ClientController {
       return res.status(500).json({ message: "Internal server error", error });
     }
   }
-
 }
