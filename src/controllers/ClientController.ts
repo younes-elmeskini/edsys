@@ -20,6 +20,7 @@ export const ClientSchema = z.object({
   selfEmployed: z.string().optional(),
   duration: z.string().optional(),
 });
+
 type ClientInput = z.infer<typeof ClientSchema>;
 
 export default class ClientController {
@@ -102,7 +103,7 @@ export default class ClientController {
       return res.status(201).json({
         message: "Client created successfully",
         client,
-        status: Status ? status : null,
+        status: Status ? Status : null,
       });
     } catch (error) {
       console.error(error);
@@ -111,9 +112,9 @@ export default class ClientController {
   }
   static async getClient(req: Request, res: Response): Promise<any> {
     try {
-      const search = req.query.search as string ;
-      const page = parseInt(req.query.page as string) || 1; 
-      const pageSize = 2
+      const search = req.query.search as string;
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = 2;
       const skip = (page - 1) * pageSize;
 
       let whereClause: any = {
@@ -183,7 +184,69 @@ export default class ClientController {
         pagination: {
           currentPage: page,
           totalPages: totalPages,
-        }
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error", error });
+    }
+  }
+  static async getStats(req: Request, res: Response): Promise<any> {
+    try {
+      const totalClients = await prisma.client.count({
+        where: {
+          deletedAt: null,
+        },
+      });
+      const totalSoftwareDevelopment = await prisma.client.count({
+        where: {
+          deletedAt: null,
+          education: {
+            is: {
+              educationName: "Software Development",
+            },
+          },
+        },
+      });
+      const totalDataScience = await prisma.client.count({
+        where: {
+          deletedAt: null,
+          education: {
+            is: {
+              educationName: "Data Science & AI",
+            },
+          },
+        },
+      });
+      const totalCreativeTechnologies = await prisma.client.count({
+        where: {
+          deletedAt: null,
+          education: {
+            is: {
+              educationName: "Creative Technologies",
+            },
+          },
+        },
+      });
+      const SoftwareDevelopment =
+        (totalSoftwareDevelopment / totalClients) * 100;
+      const DataScience = (totalDataScience / totalClients) * 100;
+      const CreativeTechnologies =
+        (totalCreativeTechnologies / totalClients) * 100;
+      return res.status(200).json({
+        totalClients,
+        SoftwareDevelopment: {
+          educationName: "Software Development",
+          percentage: SoftwareDevelopment,
+        },
+        DataScience: {
+          educationName: "Data Science & AI",
+          percentage: DataScience,
+        },
+        CreativeTechnologies: {
+          educationName: "Creative Technologies",
+          percentage: CreativeTechnologies,
+        },
       });
     } catch (error) {
       console.error(error);
