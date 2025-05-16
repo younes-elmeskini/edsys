@@ -42,8 +42,9 @@ model Client {
   firstName     String?
   lastName      String?
   phone         Int?
-  email         String         @unique
-  education     String?
+  email         String          @unique
+  educationId   String
+  education     Eduction        @relation(fields: [educationId], references: [educationId])
   Status        Status
   academicYear  String?
   createdAt     DateTime        @default(now())
@@ -53,6 +54,12 @@ model Client {
   Further       Further[]
   searching     searching[]
   Recruited     Recruited[]
+}
+
+model Eduction {
+  educationId   String   @id @default(cuid())
+  educationName String   @unique
+  Client        Client[]
 }
 
 model Recruited {
