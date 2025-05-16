@@ -57,6 +57,7 @@ model Client {
 
 model Recruited {
   recruitedId String   @id @default(cuid())
+  clientId    String
   title       String?
   campany     String?
   position    String?
@@ -64,36 +65,35 @@ model Recruited {
   workCity    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  clientId    String
   client      Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model Further {
   futherId  String   @id @default(cuid())
+  clientId  String   
   school    String?
   furtherEd String?
   city      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  clientId  String
   client    Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model self_employed {
   employedId   String   @id @default(cuid())
+  clientId     String   
   selfEmployed String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  clientId     String
   client       Client   @relation(fields: [clientId], references: [clientId])
 }
 
 model searching {
   searchId  String   @id @default(cuid())
+  clientId  String   
   duration  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  clientId  String
   client    Client   @relation(fields: [clientId], references: [clientId])
 }
 

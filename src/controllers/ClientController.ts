@@ -121,7 +121,7 @@ export default class ClientController {
           education: true,
           academicYear: true,
           Status: true,
-          Recruited:  {
+          Recruited: {
             select: {
               title: true,
               campany: true,
@@ -150,6 +150,109 @@ export default class ClientController {
         },
       });
       return res.status(200).json(clients);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error", error });
+    }
+  }
+  static async updateClient(req: Request, res: Response): Promise<any> {
+    try {
+      const { clientId } = req.params;
+      const {
+        firstName,
+        lastName,
+        email,
+        phone,
+        education,
+        academicYear,
+        Status,
+        title,
+        campany,
+        position,
+        startYear,
+        city,
+        school,
+        furtherEd,
+        selfEmployed,
+        duration,
+      }: ClientInput = ClientSchema.parse(req.body);
+      const existingClient = await prisma.client.findFirst({
+        where: {
+          email,
+          NOT: {
+            clientId: clientId,
+          },
+        },
+      });
+
+      if (existingClient) {
+        return res.status(400).json({
+          message: "Email already exists for another client",
+        });
+      }
+
+      const client = await prisma.client.update({
+        where: { clientId },
+        data: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          education,
+          academicYear,
+          Status: Status as Status,
+        },
+      });
+      await Promise.all([
+        prisma.recruited.deleteMany({ where: { clientId } }),
+        prisma.further.deleteMany({ where: { clientId } }),
+        prisma.self_employed.deleteMany({ where: { clientId } }),
+        prisma.searching.deleteMany({ where: { clientId } }),
+      ]);
+
+      let status;
+
+      if (Status === "RECRUITED") {
+        status = await prisma.recruited.create({
+          data: {
+            clientId,
+            title,
+            campany,
+            position,
+            startYear,
+            workCity: city,
+          },
+        });
+      } else if (Status === "FARTHER") {
+        status = await prisma.further.create({
+          data: {
+            clientId,
+            school,
+            furtherEd,
+            city,
+          },
+        });
+      } else if (Status === "EMPLOYED") {
+        status = await prisma.self_employed.create({
+          data: {
+            clientId,
+            selfEmployed,
+          },
+        });
+      } else if (Status === "SEARCHING") {
+        status = await prisma.searching.create({
+          data: {
+            clientId,
+            duration,
+          },
+        });
+      }
+
+      return res.status(200).json({
+        message: "Client updated successfully",
+        client,
+        status: status ? status : null,
+      });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error", error });
