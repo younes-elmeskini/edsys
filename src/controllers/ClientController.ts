@@ -64,7 +64,7 @@ export default class ClientController {
       if (Status === "RECRUITED") {
         status = await prisma.recruited.create({
           data: {
-            clientId :client.clientId,
+            clientId: client.clientId,
             title,
             campany,
             position,
@@ -76,7 +76,7 @@ export default class ClientController {
       if (Status === "FARTHER") {
         status = await prisma.further.create({
           data: {
-            clientId :client.clientId,
+            clientId: client.clientId,
             school,
             furtherEd,
             city,
@@ -86,7 +86,7 @@ export default class ClientController {
       if (Status === "EMPLOYED") {
         status = await prisma.self_employed.create({
           data: {
-            clientId :client.clientId,
+            clientId: client.clientId,
             selfEmployed,
           },
         });
@@ -94,7 +94,7 @@ export default class ClientController {
       if (Status === "SEARCHING") {
         status = await prisma.searching.create({
           data: {
-            clientId :client.clientId,
+            clientId: client.clientId,
             duration,
           },
         });
@@ -104,6 +104,52 @@ export default class ClientController {
         client,
         status: status ? status : null,
       });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error", error });
+    }
+  }
+  static async getClient(req: Request, res: Response): Promise<any> {
+    try {
+      const clients = await prisma.client.findMany({
+        select: {
+          clientId: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          education: true,
+          academicYear: true,
+          Status: true,
+          Recruited:  {
+            select: {
+              title: true,
+              campany: true,
+              position: true,
+              startYear: true,
+              workCity: true,
+            },
+          },
+          Further: {
+            select: {
+              school: true,
+              furtherEd: true,
+              city: true,
+            },
+          },
+          self_employed: {
+            select: {
+              selfEmployed: true,
+            },
+          },
+          searching: {
+            select: {
+              duration: true,
+            },
+          },
+        },
+      });
+      return res.status(200).json(clients);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error", error });
