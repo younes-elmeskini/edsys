@@ -258,4 +258,23 @@ export default class ClientController {
       return res.status(500).json({ message: "Internal server error", error });
     }
   }
+  static async deleteClient(req: Request, res: Response): Promise<any> {
+    try {
+      const { clientId } = req.params;
+      const client = await prisma.client.update({
+        where: { clientId },
+        data: {
+            deletedAt: new Date(),
+        }
+      });
+      return res.status(200).json({
+        message: "Client deleted successfully",
+        client,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error", error });
+    }
+  }
+
 }
