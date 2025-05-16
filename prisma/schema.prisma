@@ -26,15 +26,14 @@ enum Status {
 }
 
 model User {
-  userId    String   @id @default(cuid())
-  userName  String?
-  email     String?  @unique
-  password  String?
-  role      Role
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  userId     String       @id @default(cuid())
+  userName   String?
+  email      String?      @unique
+  password   String?
+  role       Role
+  avatar     String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   resetToken resetToken[]
 }
 
@@ -43,12 +42,13 @@ model Client {
   firstName     String?
   lastName      String?
   phone         Int?
-  email         String?         @unique
+  email         String         @unique
   education     String?
   Status        Status
   academicYear  String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
   self_employed self_employed[]
   Further       Further[]
   searching     searching[]
@@ -70,7 +70,7 @@ model Recruited {
 
 model Further {
   futherId  String   @id @default(cuid())
-  clientId  String   
+  clientId  String
   school    String?
   furtherEd String?
   city      String?
@@ -81,7 +81,7 @@ model Further {
 
 model self_employed {
   employedId   String   @id @default(cuid())
-  clientId     String   
+  clientId     String
   selfEmployed String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -90,7 +90,7 @@ model self_employed {
 
 model searching {
   searchId  String   @id @default(cuid())
-  clientId  String   
+  clientId  String
   duration  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
