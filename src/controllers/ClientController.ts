@@ -14,6 +14,7 @@ export const ClientSchema = z.object({
   campany: z.string().optional(),
   position: z.string().optional(),
   startYear: z.string().optional(),
+  workCity: z.string().optional(),
   city: z.string().optional(),
   school: z.string().optional(),
   furtherEd: z.string().optional(),
@@ -38,6 +39,7 @@ export default class ClientController {
         campany,
         position,
         startYear,
+        workCity,
         city,
         school,
         furtherEd,
@@ -70,7 +72,7 @@ export default class ClientController {
             campany,
             position,
             startYear,
-            workCity: city,
+            workCity
           },
         });
       }
@@ -147,8 +149,11 @@ export default class ClientController {
           firstName: true,
           lastName: true,
           email: true,
-          phone: true,
-          education: true,
+          education:{
+            select:{
+                educationName:true,
+            }
+          },
           academicYear: true,
           Status: true,
           Recruited: {
@@ -234,18 +239,11 @@ export default class ClientController {
       const CreativeTechnologies =
         (totalCreativeTechnologies / totalClients) * 100;
       return res.status(200).json({
-        totalClients,
-        SoftwareDevelopment: {
-          educationName: "Software Development",
-          percentage: SoftwareDevelopment,
-        },
-        DataScience: {
-          educationName: "Data Science & AI",
-          percentage: DataScience,
-        },
-        CreativeTechnologies: {
-          educationName: "Creative Technologies",
-          percentage: CreativeTechnologies,
+        data: {
+          totalClients,
+          SoftwareDevelopment,
+          DataScience,
+          CreativeTechnologies,
         },
       });
     } catch (error) {
@@ -349,7 +347,7 @@ export default class ClientController {
       return res.status(200).json({
         message: "Client updated successfully",
         client,
-        status: status ? status : null,
+        status: Status ? Status : null,
       });
     } catch (error) {
       console.error(error);

@@ -6,7 +6,7 @@ interface JwtPayload {
   userId: String;
   role: string;
 }
-export const generateToken = (user: User): string => {
+export const generateToken = (user: User, stayed: Boolean) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET must be defined");
   }
@@ -14,9 +14,9 @@ export const generateToken = (user: User): string => {
     {
       userId: user.userId,
       role: user.role,
-    },
+    }, 
     process.env.JWT_SECRET,
-    { expiresIn: "1h" }
+    {expiresIn: stayed ? "15d" : "1d"}
   );
   return token;
 };
@@ -39,7 +39,7 @@ export const authenticate = (
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-    req.user = decoded; 
+    req.user = decoded;
     next();
   } catch (err) {
     res.status(401).json({ message: "Invalid token." });

@@ -20,7 +20,7 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
-    stay: z.boolean().optional().default(false),
+  stay: z.boolean().optional().default(false),
 });
 type LoginUserInput = z.infer<typeof loginSchema>;
 
@@ -39,15 +39,15 @@ export default class UserController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<any> {
     try {
       const parsedData: CreateUserInput = createUserSchema.parse(req.body);
       const userExists = await prisma.user.findUnique({
         where: { email: parsedData.email },
       });
       if (userExists) {
-        res.status(409).json({ message: "User already exists" });
-        return;
+        return res.status(409).json({ message: "User already exists" });
+        
       }
       const hashedPassword: string = await argon2.hash(parsedData.password);
       const user: User = await prisma.user.create({
@@ -59,20 +59,17 @@ export default class UserController {
         },
       });
 
-      res.status(201).json(user);
+      return res.status(201).json(user);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ errors: error.errors });
-      } else {
-        next(error);
-      }
+        res.status(400).json({ errors: error });
+        next(error)
     }
   }
   static async login(
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<any> {
     try {
       const parsedData: LoginUserInput = loginSchema.parse(req.body);
       const user = await prisma.user.findUnique({
@@ -80,38 +77,32 @@ export default class UserController {
       });
 
       if (!user) {
-        res.status(401).json({ message: "Invalid credentials" });
-        return;
+        return res.status(401).json({ message: "Invalid credentials" });
+        ;
       }
-
       if (!user) {
-        res.status(401).json({ message: "Invalid credentials" });
-        return;
+        return res.status(401).json({ message: "Invalid credentials" });
       }
       const isPasswordValid: boolean = await argon2.verify(
         user.password!,
         parsedData.password
       );
       if (!isPasswordValid) {
-        res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid credentials" });
       }
-      if (!process.env.JWT_SECRET) {
-        throw new Error("JWT_SECRET must be defined in environment variables");
-      }
-      const token = generateToken(user);
+      const stayed = parsedData.stay;
+      const token = generateToken(user, stayed);
       if (!token) {
-        res.status(401).json({ message: "Invalid credentials" });
-        return;
+        return res.status(401).json({ message: "Invalid credentials" });
+        ;
       }
-      const maxAge = parsedData.stay === true ?15 * 24 * 60 * 60 * 1000  : 24 * 60 * 60 * 1000 ;
       res.cookie("token", token, {
-        httpOnly: process.env.NODE_ENV === "production",
-        secure: process.env.NODE_ENV === "production", // Only require HTTPS in production
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        maxAge: maxAge,
-        path: "/",
+        httpOnly: true,
+        secure:false, 
+        sameSite: "strict",
+        maxAge: stayed? 15 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000, 
       });
-      res.status(200).json({
+      return res.status(200).json({
         message: "Login successful",
         user: {
           userId: user.userId,
@@ -119,23 +110,15 @@ export default class UserController {
         },
       });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          errors: error.errors.map((e) => ({
-            path: e.path.join("."),
-            message: e.message,
-          })),
-        });
-      }
       console.error("Login error:", error);
-      res.status(500).json({ message: "Authentication failed" });
+      return res.status(500).json({ message: "Authentication failed" });
     }
   }
   static async userData(
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<any> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -152,10 +135,10 @@ export default class UserController {
         },
       });
       if (!user) {
-        res.status(404).json({ message: "User not found" });
-        return;
+        return res.status(404).json({ message: "User not found" });
+        
       }
-      res.status(200).json({ data: user });
+      return res.status(200).json({ data: user });
     } catch (error) {
       console.error("Error fetching user data:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -186,13 +169,13 @@ export default class UserController {
           userId: user.userId,
         },
       });
-      const resetUrl = `http://localhost:4000/reset-password/${resetToken}`;
+      const resetUrl = `http://localhost:3000/reset/${resetToken}`;
 
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
         subject: "Réinitialisation de mot de passe",
-        html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">${resetUrl}</a></p>`,
+        html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">reset password here</a></p>`,
       });
       return res
         .status(200)
@@ -207,7 +190,7 @@ export default class UserController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<any> {
     const { token, newPassword }: ResetPasswordInput =
       resetPasswordSchema.parse(req.body);
     const resetToken = await prisma.resetToken.findUnique({
@@ -215,12 +198,10 @@ export default class UserController {
       include: { user: true },
     });
     if (!resetToken) {
-      res.status(404).json({ message: "Invalid or expired token" });
-      return;
+      return res.status(404).json({ message: "Invalid or expired token" });
     }
     if (resetToken.expiredAt < new Date()) {
-      res.status(400).json({ message: "Token expired" });
-      return;
+      return res.status(400).json({ message: "Token expired" });
     }
     const hashedPassword = await argon2.hash(newPassword);
     await prisma.user.update({
@@ -230,7 +211,7 @@ export default class UserController {
     await prisma.resetToken.delete({
       where: { token },
     });
-    res.status(200).json({ message: "Password reset successful" });
+    return res.status(200).json({ message: "Password reset successful" });
   }
   static async getUser(
     req: Request,
