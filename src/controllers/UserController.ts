@@ -2,18 +2,18 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../prisma/client";
 import { z } from "zod";
 import * as argon2 from "argon2";
-import jwt from "jsonwebtoken";
 import { User, resetToken } from "@prisma/client";
 import transporter from "../utils/mailer";
 import crypto from "crypto";
 import { generateToken } from "../middlewares/auth";
+import Validation from "../utils/validation";
 
-const createUserSchema = z.object({
-  userName: z.string().min(3),
-  email: z.string().email(),
-  password: z.string().min(10),
-});
-type CreateUserInput = z.infer<typeof createUserSchema>;
+// const createUserSchema = z.object({
+//   userName: z.string().min(3),
+//   email: z.string().email(),
+//   password: z.string().min(10),
+// });
+type CreateUserInput = z.infer<typeof Validation.createUserSchema>;
 
 export const loginSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -41,7 +41,7 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
-      const parsedData: CreateUserInput = createUserSchema.parse(req.body);
+      const parsedData: CreateUserInput = Validation.createUserSchema.parse(req.body);
       const userExists = await prisma.user.findUnique({
         where: { email: parsedData.email },
       });
