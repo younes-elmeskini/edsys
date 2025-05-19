@@ -51,7 +51,7 @@ export default class UserController {
 
       return res.status(201).json(user);
     } catch (error) {
-      res.status(400).json({ errors: error });
+      res.status(500).json({ errors: error });
       next(error);
     }
   }
@@ -129,7 +129,7 @@ export default class UserController {
       return res.status(200).json({ data: user });
     } catch (error) {
       console.error("Error fetching user data:", error);
-      res.status(500).json({ message: "Internal server error" });
+      return res.status(500).json({ message: "Internal server error" });
     }
   }
   static async forgetPassword(
