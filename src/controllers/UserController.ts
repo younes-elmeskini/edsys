@@ -20,7 +20,6 @@ export default class UserController {
   static async createUser(
     req: Request,
     res: Response,
-    next: NextFunction
   ): Promise<void> {
     try {
       const validationResult = Validation.createUserSchema.safeParse(req.body);
@@ -51,7 +50,7 @@ export default class UserController {
       });
       res.status(201).json(user);
     } catch (error) {
-      res.status(500).json({ errors: error });
+      res.status(500).json({ message: "Authentication failed"  });
     }
   }
   static async login(req: Request, res: Response): Promise<void> {
@@ -134,7 +133,6 @@ export default class UserController {
   static async forgetPassword(
     req: Request,
     res: Response,
-    next: NextFunction
   ): Promise<void> {
     try {
       const validationResult = Validation.forgetPasswordSchema.safeParse(
@@ -173,7 +171,7 @@ export default class UserController {
         subject: "Réinitialisation de mot de passe",
         html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">reset password here</a></p>`,
       });
-      res.status(200).json({ message: "Password reset token sent", token });
+      res.status(200).json({ message: "Password reset token sent", token});
     } catch (error) {
       console.error("Error in forgetPassword:", error);
       res.status(500).json({ message: "Internal server error" });
