@@ -41,7 +41,7 @@ model Client {
   clientId      String          @id @default(cuid())
   firstName     String?
   lastName      String?
-  phone         Int?
+  phone         String?
   email         String          @unique
   educationId   String
   education     Eduction        @relation(fields: [educationId], references: [educationId])

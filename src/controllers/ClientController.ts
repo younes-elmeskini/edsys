@@ -6,7 +6,7 @@ export const ClientSchema = z.object({
   firstName: z.string().min(3),
   lastName: z.string().min(3),
   email: z.string().email(),
-  phone: z.number().min(10),
+  phone: z.string().min(10),
   educationId: z.string().min(6),
   academicYear: z.string().min(4),
   status: z.enum(Object.values(Status) as [string, ...string[]]),
@@ -57,7 +57,7 @@ export default class ClientController {
           firstName,
           lastName,
           email,
-          phone,
+          phone: phone,
           educationId,
           academicYear,
           Status: status as Status,
@@ -72,7 +72,7 @@ export default class ClientController {
             campany,
             position,
             startYear,
-            workCity
+            workCity,
           },
         });
       }
@@ -137,9 +137,7 @@ export default class ClientController {
         where: whereClause,
       });
       const totalPages = Math.ceil(totalClients / pageSize);
-      if (page > totalPages) {
-        return res.status(404).json({ message: "No more clients" });
-      }
+
       const clients = await prisma.client.findMany({
         where: whereClause,
         skip: skip,
@@ -149,10 +147,12 @@ export default class ClientController {
           firstName: true,
           lastName: true,
           email: true,
-          education:{
-            select:{
-                educationName:true,
-            }
+          phone: true,
+          education: {
+            select: {
+              educationName: true,
+              educationId: true,
+            },
           },
           academicYear: true,
           Status: true,
@@ -183,6 +183,7 @@ export default class ClientController {
             },
           },
         },
+        orderBy: { createdAt: "desc" },
       });
       return res.status(200).json({
         data: clients,
@@ -293,7 +294,7 @@ export default class ClientController {
           firstName,
           lastName,
           email,
-          phone,
+          phone: phone,
           educationId,
           academicYear,
           Status: status as Status,

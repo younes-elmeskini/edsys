@@ -1,10 +1,12 @@
-import express from 'express';
-import userRoutes from './routes/UserRoute';
-import clientRoutes from './routes/ClientRoute';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import express from "express";
+import userRoutes from "./routes/UserRoute";
+import clientRoutes from "./routes/ClientRoute";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 
@@ -22,7 +24,7 @@ app.use(
   })
 );
 
-app.disable('x-powered-by');
+app.disable("x-powered-by");
 
 app.use(helmet());
 app.set("trust proxy", 1);
@@ -34,8 +36,8 @@ const limiter = rateLimit({
 
 app.use(limiter);
 // Routes
-app.use('/user', userRoutes);
+app.use("/user", userRoutes);
 
-app.use('/client', clientRoutes);
+app.use("/client", clientRoutes);
 
 export default app;

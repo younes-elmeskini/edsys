@@ -14,9 +14,9 @@ export const generateToken = (user: User, stayed: Boolean) => {
     {
       userId: user.userId,
       role: user.role,
-    }, 
+    },
     process.env.JWT_SECRET,
-    {expiresIn: stayed ? "15d" : "1d"}
+    { expiresIn: stayed ? "15d" : "1d" }
   );
   return token;
 };
@@ -26,7 +26,7 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ): void => {
-  const token = req.cookies.token;
+  const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     res.status(401).json({ message: "Access denied. No token provided." });

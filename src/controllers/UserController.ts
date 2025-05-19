@@ -47,7 +47,6 @@ export default class UserController {
       });
       if (userExists) {
         return res.status(409).json({ message: "User already exists" });
-        
       }
       const hashedPassword: string = await argon2.hash(parsedData.password);
       const user: User = await prisma.user.create({
@@ -61,8 +60,8 @@ export default class UserController {
 
       return res.status(201).json(user);
     } catch (error) {
-        res.status(400).json({ errors: error });
-        next(error)
+      res.status(400).json({ errors: error });
+      next(error);
     }
   }
   static async login(
@@ -77,12 +76,9 @@ export default class UserController {
       });
 
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
-        ;
+        return res.status(404).json({ message: "Invalid email" });
       }
-      if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
+
       const isPasswordValid: boolean = await argon2.verify(
         user.password!,
         parsedData.password
@@ -94,13 +90,12 @@ export default class UserController {
       const token = generateToken(user, stayed);
       if (!token) {
         return res.status(401).json({ message: "Invalid credentials" });
-        ;
       }
       res.cookie("token", token, {
         httpOnly: true,
-        secure:false, 
+        secure: false,
         sameSite: "strict",
-        maxAge: stayed? 15 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000, 
+        maxAge: stayed ? 15 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
       });
       return res.status(200).json({
         message: "Login successful",
@@ -136,7 +131,6 @@ export default class UserController {
       });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
-        
       }
       return res.status(200).json({ data: user });
     } catch (error) {
@@ -198,7 +192,7 @@ export default class UserController {
       include: { user: true },
     });
     if (!resetToken) {
-      return res.status(404).json({ message: "Invalid or expired token" });
+      return res.status(400).json({ message: "Invalid or expired token" });
     }
     if (resetToken.expiredAt < new Date()) {
       return res.status(400).json({ message: "Token expired" });
