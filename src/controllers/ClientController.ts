@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response } from "express";
 import prisma from "../prisma/client";
 import { z } from "zod";
 import { Status } from "@prisma/client";
@@ -26,6 +26,13 @@ type ClientInput = z.infer<typeof ClientSchema>;
 
 export default class ClientController {
   static async addClient(req: Request, res: Response): Promise<any> {
+    const validationResult = ClientSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({
+        message: "Validation error",
+        errors: validationResult.error.format(),
+      });
+    }
     try {
       const {
         firstName,

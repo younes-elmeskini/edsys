@@ -8,27 +8,11 @@ import crypto from "crypto";
 import { generateToken } from "../middlewares/auth";
 import Validation from "../utils/validation";
 
-// const createUserSchema = z.object({
-//   userName: z.string().min(3),
-//   email: z.string().email(),
-//   password: z.string().min(10),
-// });
 type CreateUserInput = z.infer<typeof Validation.createUserSchema>;
 
-export const loginSchema = z.object({
-  email: z.string().email("Email invalide"),
-  password: z
-    .string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
-  stay: z.boolean().optional().default(false),
-});
-type LoginUserInput = z.infer<typeof loginSchema>;
+type LoginUserInput = z.infer<typeof Validation.loginSchema>;
 
-export const resetPasswordSchema = z.object({
-  token: z.string(),
-  newPassword: z.string().min(10),
-});
-type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+type ResetPasswordInput = z.infer<typeof Validation.resetPasswordSchema>;
 export const forgetPasswordSchema = z.object({
   email: z.string().email("Email invalide"),
 });
@@ -70,7 +54,7 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
-      const parsedData: LoginUserInput = loginSchema.parse(req.body);
+      const parsedData: LoginUserInput = Validation.loginSchema.parse(req.body);
       const user = await prisma.user.findUnique({
         where: { email: parsedData.email },
       });
@@ -186,7 +170,7 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     const { token, newPassword }: ResetPasswordInput =
-      resetPasswordSchema.parse(req.body);
+      Validation.resetPasswordSchema.parse(req.body);
     const resetToken = await prisma.resetToken.findUnique({
       where: { token },
       include: { user: true },
