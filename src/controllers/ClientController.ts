@@ -7,21 +7,24 @@ import Validation from "../utils/validation";
 type ClientInput = z.infer<typeof Validation.ClientSchema>;
 
 export default class ClientController {
-  static async addClient(req: Request, res: Response): Promise<any> {
+  static async addClient(req: Request, res: Response): Promise<void> {
     try {
       const validationResult = Validation.ClientSchema.safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: validationResult.error.format(),
+        const firstError =
+          validationResult.error.errors[0]?.message || "Validation error";
+        res.status(400).json({
+          message: firstError,
         });
+        return;
       }
       const parsedData: ClientInput = Validation.ClientSchema.parse(req.body);
       const clientExists = await prisma.client.findUnique({
         where: { email: parsedData.email },
       });
       if (clientExists) {
-        return res.status(409).json({ message: "Client already exists" });
+        res.status(409).json({ message: "Client already exists" });
+        return;
       }
       const client = await prisma.client.create({
         data: {
@@ -34,9 +37,8 @@ export default class ClientController {
           Status: parsedData.status as Status,
         },
       });
-      let Status;
       if (parsedData.status === "RECRUITED") {
-        Status = await prisma.recruited.create({
+        await prisma.recruited.create({
           data: {
             clientId: client.clientId,
             title: parsedData.title,
@@ -48,7 +50,7 @@ export default class ClientController {
         });
       }
       if (parsedData.status === "FARTHER") {
-        Status = await prisma.further.create({
+        await prisma.further.create({
           data: {
             clientId: client.clientId,
             school: parsedData.school,
@@ -58,7 +60,7 @@ export default class ClientController {
         });
       }
       if (parsedData.status === "EMPLOYED") {
-        Status = await prisma.self_employed.create({
+        await prisma.self_employed.create({
           data: {
             clientId: client.clientId,
             selfEmployed: parsedData.selfEmployed,
@@ -66,22 +68,22 @@ export default class ClientController {
         });
       }
       if (parsedData.status === "SEARCHING") {
-        Status = await prisma.searching.create({
+        await prisma.searching.create({
           data: {
             clientId: client.clientId,
             duration: parsedData.duration,
           },
         });
       }
-      return res.status(201).json({
+      res.status(201).json({
         message: "Client created successfully",
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal server error", error });
+      res.status(500).json({ message: "Internal server error"});
     }
   }
-  static async getClient(req: Request, res: Response): Promise<any> {
+  static async getClient(req: Request, res: Response): Promise<void> {
     try {
       const search = req.query.search as string;
       const page = parseInt(req.query.page as string) || 1;
@@ -154,7 +156,7 @@ export default class ClientController {
         },
         orderBy: { createdAt: "desc" },
       });
-      return res.status(200).json({
+      res.status(200).json({
         data: clients,
         pagination: {
           currentPage: page,
@@ -163,10 +165,10 @@ export default class ClientController {
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal server error", error });
+      res.status(500).json({ message: "Internal server error"});
     }
   }
-  static async getStats(req: Request, res: Response): Promise<any> {
+  static async getStats(req: Request, res: Response): Promise<void> {
     try {
       const totalClients = await prisma.client.count({
         where: {
@@ -208,7 +210,7 @@ export default class ClientController {
       const DataScience = (totalDataScience / totalClients) * 100;
       const CreativeTechnologies =
         (totalCreativeTechnologies / totalClients) * 100;
-      return res.status(200).json({
+      res.status(200).json({
         data: {
           totalClients,
           SoftwareDevelopment,
@@ -218,18 +220,18 @@ export default class ClientController {
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal server error", error });
+      res.status(500).json({ message: "Internal server error" });
     }
   }
-  static async updateClient(req: Request, res: Response): Promise<any> {
+  static async updateClient(req: Request, res: Response): Promise<void> {
     try {
       const { clientId } = req.params;
       const validationResult = Validation.ClientSchema.safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: validationResult.error.format(),
-        });
+        const firstError =
+          validationResult.error.errors[0]?.message || "Validation error.";
+        res.status(400).json({ message: firstError });
+        return;
       }
       const parsedData: ClientInput = Validation.ClientSchema.parse(req.body);
       const existingClient = await prisma.client.findFirst({
@@ -242,9 +244,10 @@ export default class ClientController {
       });
 
       if (existingClient) {
-        return res.status(400).json({
+        res.status(400).json({
           message: "Email already exists for another client",
         });
+        return;
       }
 
       await prisma.client.update({
@@ -301,19 +304,20 @@ export default class ClientController {
           },
         });
       } else {
-        return res.status(400).json({
+        res.status(400).json({
           message: "Invalid status",
         });
+        return;
       }
-      return res.status(200).json({
+      res.status(200).json({
         message: "Client updated successfully",
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal server error", error });
+      res.status(500).json({ message: "Internal server error"});
     }
   }
-  static async deleteClient(req: Request, res: Response): Promise<any> {
+  static async deleteClient(req: Request, res: Response): Promise<void> {
     try {
       const { clientId } = req.params;
       await prisma.client.update({
@@ -322,12 +326,12 @@ export default class ClientController {
           deletedAt: new Date(),
         },
       });
-      return res.status(200).json({
+      res.status(200).json({
         message: "Client deleted successfully",
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ message: "Internal server error", error });
+      res.status(500).json({ message: "Internal server error"});
     }
   }
 }

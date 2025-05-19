@@ -21,14 +21,14 @@ export default class UserController {
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<any> {
+  ): Promise<void> {
     try {
       const validationResult = Validation.createUserSchema.safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: validationResult.error.format(),
-        });
+        const firstError =
+          validationResult.error.errors[0]?.message || "Validation error.";
+        res.status(400).json({ message: firstError });
+        return;
       }
       const parsedData: CreateUserInput = Validation.createUserSchema.parse(
         req.body
@@ -37,7 +37,8 @@ export default class UserController {
         where: { email: parsedData.email },
       });
       if (userExists) {
-        return res.status(409).json({ message: "User already exists" });
+        res.status(409).json({ message: "User already exists" });
+        return;
       }
       const hashedPassword: string = await argon2.hash(parsedData.password);
       const user: User = await prisma.user.create({
@@ -48,25 +49,19 @@ export default class UserController {
           role: "ADMIN",
         },
       });
-
-      return res.status(201).json(user);
+      res.status(201).json(user);
     } catch (error) {
       res.status(500).json({ errors: error });
-      next(error);
     }
   }
-  static async login(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<any> {
+  static async login(req: Request, res: Response): Promise<void> {
     try {
       const validationResult = Validation.loginSchema.safeParse(req.body);
       if (!validationResult.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: validationResult.error.format(),
-        });
+        const firstError =
+          validationResult.error.errors[0]?.message || "Validation error.";
+        res.status(400).json({ message: firstError });
+        return;
       }
       const parsedData: LoginUserInput = Validation.loginSchema.parse(req.body);
       const user = await prisma.user.findUnique({
@@ -74,7 +69,8 @@ export default class UserController {
       });
 
       if (!user) {
-        return res.status(404).json({ message: "Invalid email" });
+        res.status(404).json({ message: "Invalid email" });
+        return;
       }
 
       const isPasswordValid: boolean = await argon2.verify(
@@ -82,12 +78,14 @@ export default class UserController {
         parsedData.password
       );
       if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
       }
       const stayed = parsedData.stay;
       const token = generateToken(user, stayed);
       if (!token) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
       }
       res.cookie("token", token, {
         httpOnly: true,
@@ -95,7 +93,7 @@ export default class UserController {
         sameSite: "strict",
         maxAge: stayed ? 15 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000,
       });
-      return res.status(200).json({
+      res.status(200).json({
         message: "Login successful",
         user: {
           userId: user.userId,
@@ -104,10 +102,10 @@ export default class UserController {
       });
     } catch (error) {
       console.error("Login error:", error);
-      return res.status(500).json({ message: "Authentication failed" });
+      res.status(500).json({ message: "Authentication failed" });
     }
   }
-  static async userData(req: Request, res: Response): Promise<any> {
+  static async userData(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -124,28 +122,29 @@ export default class UserController {
         },
       });
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "User not found" });
+        return;
       }
-      return res.status(200).json({ data: user });
+      res.status(200).json({ data: user });
     } catch (error) {
       console.error("Error fetching user data:", error);
-      return res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error" });
     }
   }
   static async forgetPassword(
     req: Request,
     res: Response,
     next: NextFunction
-  ): Promise<any> {
+  ): Promise<void> {
     try {
       const validationResult = Validation.forgetPasswordSchema.safeParse(
         req.body
       );
       if (!validationResult.success) {
-        return res.status(400).json({
-          message: "Validation error",
-          errors: validationResult.error.format(),
-        });
+        const firstError =
+          validationResult.error.errors[0]?.message || "Validation error.";
+        res.status(400).json({ message: firstError });
+        return;
       }
       const { email }: ForgetPasswordInput =
         Validation.forgetPasswordSchema.parse(req.body);
@@ -153,7 +152,8 @@ export default class UserController {
         where: { email },
       });
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "User not found" });
+        return;
       }
       const resetToken = crypto.randomBytes(32).toString("hex");
       const expiredAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -173,20 +173,14 @@ export default class UserController {
         subject: "Réinitialisation de mot de passe",
         html: `<p>Pour réinitialiser votre mot de passe, cliquez ici : <a href="${resetUrl}">reset password here</a></p>`,
       });
-      return res
-        .status(200)
-        .json({ message: "Password reset token sent", token });
+      res.status(200).json({ message: "Password reset token sent", token });
     } catch (error) {
       console.error("Error in forgetPassword:", error);
-      return res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({ message: "Internal server error" });
     }
   }
 
-  static async resetPassword(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<any> {
+  static async resetPassword(req: Request, res: Response): Promise<void> {
     const { token, newPassword }: ResetPasswordInput =
       Validation.resetPasswordSchema.parse(req.body);
     const resetToken = await prisma.resetToken.findUnique({
@@ -194,10 +188,12 @@ export default class UserController {
       include: { user: true },
     });
     if (!resetToken) {
-      return res.status(400).json({ message: "Invalid or expired token" });
+      res.status(400).json({ message: "Invalid or expired token" });
+      return;
     }
     if (resetToken.expiredAt < new Date()) {
-      return res.status(400).json({ message: "Token expired" });
+      res.status(400).json({ message: "Token expired" });
+      return;
     }
     const hashedPassword = await argon2.hash(newPassword);
     await prisma.user.update({
@@ -207,12 +203,11 @@ export default class UserController {
     await prisma.resetToken.delete({
       where: { token },
     });
-    return res.status(200).json({ message: "Password reset successful" });
+    res.status(200).json({ message: "Password reset successful" });
   }
   static async getUser(
     req: Request,
     res: Response,
-    next: NextFunction
   ): Promise<void> {
     const users = await prisma.user.findMany();
     res.json(users);
