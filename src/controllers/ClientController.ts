@@ -2,110 +2,74 @@ import { Request, Response } from "express";
 import prisma from "../prisma/client";
 import { z } from "zod";
 import { Status } from "@prisma/client";
-export const ClientSchema = z.object({
-  firstName: z.string().min(3),
-  lastName: z.string().min(3),
-  email: z.string().email(),
-  phone: z.string().min(10),
-  educationId: z.string().min(6),
-  academicYear: z.string().min(4),
-  status: z.enum(Object.values(Status) as [string, ...string[]]),
-  title: z.string().optional(),
-  campany: z.string().optional(),
-  position: z.string().optional(),
-  startYear: z.string().optional(),
-  workCity: z.string().optional(),
-  city: z.string().optional(),
-  school: z.string().optional(),
-  furtherEd: z.string().optional(),
-  selfEmployed: z.string().optional(),
-  duration: z.string().optional(),
-});
+import Validation from "../utils/validation";
 
-type ClientInput = z.infer<typeof ClientSchema>;
+type ClientInput = z.infer<typeof Validation.ClientSchema>;
 
 export default class ClientController {
   static async addClient(req: Request, res: Response): Promise<any> {
     try {
-      const validationResult = ClientSchema.safeParse(req.body);
+      const validationResult = Validation.ClientSchema.safeParse(req.body);
       if (!validationResult.success) {
         return res.status(400).json({
           message: "Validation error",
           errors: validationResult.error.format(),
         });
       }
-      const {
-        firstName,
-        lastName,
-        email,
-        phone,
-        educationId,
-        academicYear,
-        status,
-        title,
-        campany,
-        position,
-        startYear,
-        workCity,
-        city,
-        school,
-        furtherEd,
-        selfEmployed,
-        duration,
-      }: ClientInput = ClientSchema.parse(req.body);
+      const parsedData : ClientInput = Validation.ClientSchema.parse(req.body);
       const clientExists = await prisma.client.findUnique({
-        where: { email },
+        where: { email: parsedData.email },
       });
       if (clientExists) {
         return res.status(409).json({ message: "Client already exists" });
       }
       const client = await prisma.client.create({
         data: {
-          firstName,
-          lastName,
-          email,
-          phone: phone,
-          educationId,
-          academicYear,
-          Status: status as Status,
+          firstName:parsedData.firstName,
+          lastName:parsedData.lastName,
+          email:parsedData.email,
+          phone: parsedData.phone,
+          educationId:parsedData.educationId,
+          academicYear:parsedData.academicYear,
+          Status: parsedData.status as Status,
         },
       });
       let Status;
-      if (status === "RECRUITED") {
+      if (parsedData.status === "RECRUITED") {
         Status = await prisma.recruited.create({
           data: {
             clientId: client.clientId,
-            title,
-            campany,
-            position,
-            startYear,
-            workCity,
+            title:parsedData.title,
+            campany:parsedData.campany,
+            position:parsedData.position,
+            startYear:parsedData.startYear,
+            workCity:parsedData.workCity,
           },
         });
       }
-      if (status === "FARTHER") {
+      if (parsedData.status === "FARTHER") {
         Status = await prisma.further.create({
           data: {
             clientId: client.clientId,
-            school,
-            furtherEd,
-            city,
+            school:parsedData.school,
+            furtherEd:parsedData.furtherEd,
+            city:parsedData.city,
           },
         });
       }
-      if (status === "EMPLOYED") {
+      if (parsedData.status === "EMPLOYED") {
         Status = await prisma.self_employed.create({
           data: {
             clientId: client.clientId,
-            selfEmployed,
+            selfEmployed:parsedData.selfEmployed,
           },
         });
       }
-      if (status === "SEARCHING") {
+      if (parsedData.status === "SEARCHING") {
         Status = await prisma.searching.create({
           data: {
             clientId: client.clientId,
-            duration,
+            duration:parsedData.duration,
           },
         });
       }
@@ -123,7 +87,7 @@ export default class ClientController {
     try {
       const search = req.query.search as string;
       const page = parseInt(req.query.page as string) || 1;
-      const pageSize = 2;
+      const pageSize = 10;
       const skip = (page - 1) * pageSize;
 
       let whereClause: any = {
@@ -279,7 +243,7 @@ export default class ClientController {
         furtherEd,
         selfEmployed,
         duration,
-      }: ClientInput = ClientSchema.parse(req.body);
+      }: ClientInput = Validation.ClientSchema.parse(req.body);
       const existingClient = await prisma.client.findFirst({
         where: {
           email,
