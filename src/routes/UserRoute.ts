@@ -12,7 +12,7 @@ router.post('/logout', UserController.logout);
 router.post('/forgotpassword', UserController.forgetPassword);
 router.post('/resetpassword', UserController.resetPassword);
 // GET 
-router.get('/users', UserController.getUser);
+router.get('/users',authenticate, UserController.getUser);
 router.get('/me',authenticate, UserController.userData);
 
 
