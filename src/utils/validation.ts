@@ -17,4 +17,7 @@ export default class Validation {
     token: z.string(),
     newPassword: z.string().min(10),
   });
+  static forgetPasswordSchema = z.object({
+    email: z.string().email("Email invalide"),
+  });
 }

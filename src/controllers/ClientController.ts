@@ -26,14 +26,14 @@ type ClientInput = z.infer<typeof ClientSchema>;
 
 export default class ClientController {
   static async addClient(req: Request, res: Response): Promise<any> {
-    const validationResult = ClientSchema.safeParse(req.body);
-    if (!validationResult.success) {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: validationResult.error.format(),
-      });
-    }
     try {
+      const validationResult = ClientSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: validationResult.error.format(),
+        });
+      }
       const {
         firstName,
         lastName,

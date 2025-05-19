@@ -13,10 +13,8 @@ type CreateUserInput = z.infer<typeof Validation.createUserSchema>;
 type LoginUserInput = z.infer<typeof Validation.loginSchema>;
 
 type ResetPasswordInput = z.infer<typeof Validation.resetPasswordSchema>;
-export const forgetPasswordSchema = z.object({
-  email: z.string().email("Email invalide"),
-});
-type ForgetPasswordInput = z.infer<typeof forgetPasswordSchema>;
+
+type ForgetPasswordInput = z.infer<typeof Validation.forgetPasswordSchema>;
 
 export default class UserController {
   static async createUser(
@@ -25,7 +23,16 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
-      const parsedData: CreateUserInput = Validation.createUserSchema.parse(req.body);
+      const validationResult = Validation.createUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: validationResult.error.format(),
+        });
+      }
+      const parsedData: CreateUserInput = Validation.createUserSchema.parse(
+        req.body
+      );
       const userExists = await prisma.user.findUnique({
         where: { email: parsedData.email },
       });
@@ -54,6 +61,13 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
+      const validationResult = Validation.loginSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: validationResult.error.format(),
+        });
+      }
       const parsedData: LoginUserInput = Validation.loginSchema.parse(req.body);
       const user = await prisma.user.findUnique({
         where: { email: parsedData.email },
@@ -93,11 +107,7 @@ export default class UserController {
       return res.status(500).json({ message: "Authentication failed" });
     }
   }
-  static async userData(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<any> {
+  static async userData(req: Request, res: Response): Promise<any> {
     try {
       const userId = req.user?.userId;
       if (!userId) {
@@ -128,9 +138,17 @@ export default class UserController {
     next: NextFunction
   ): Promise<any> {
     try {
-      const { email }: ForgetPasswordInput = forgetPasswordSchema.parse(
+      const validationResult = Validation.forgetPasswordSchema.safeParse(
         req.body
       );
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: validationResult.error.format(),
+        });
+      }
+      const { email }: ForgetPasswordInput =
+        Validation.forgetPasswordSchema.parse(req.body);
       const user = await prisma.user.findUnique({
         where: { email },
       });
