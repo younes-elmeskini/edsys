@@ -16,7 +16,7 @@ export default class ClientController {
           errors: validationResult.error.format(),
         });
       }
-      const parsedData : ClientInput = Validation.ClientSchema.parse(req.body);
+      const parsedData: ClientInput = Validation.ClientSchema.parse(req.body);
       const clientExists = await prisma.client.findUnique({
         where: { email: parsedData.email },
       });
@@ -25,12 +25,12 @@ export default class ClientController {
       }
       const client = await prisma.client.create({
         data: {
-          firstName:parsedData.firstName,
-          lastName:parsedData.lastName,
-          email:parsedData.email,
+          firstName: parsedData.firstName,
+          lastName: parsedData.lastName,
+          email: parsedData.email,
           phone: parsedData.phone,
-          educationId:parsedData.educationId,
-          academicYear:parsedData.academicYear,
+          educationId: parsedData.educationId,
+          academicYear: parsedData.academicYear,
           Status: parsedData.status as Status,
         },
       });
@@ -39,11 +39,11 @@ export default class ClientController {
         Status = await prisma.recruited.create({
           data: {
             clientId: client.clientId,
-            title:parsedData.title,
-            campany:parsedData.campany,
-            position:parsedData.position,
-            startYear:parsedData.startYear,
-            workCity:parsedData.workCity,
+            title: parsedData.title,
+            campany: parsedData.campany,
+            position: parsedData.position,
+            startYear: parsedData.startYear,
+            workCity: parsedData.workCity,
           },
         });
       }
@@ -51,9 +51,9 @@ export default class ClientController {
         Status = await prisma.further.create({
           data: {
             clientId: client.clientId,
-            school:parsedData.school,
-            furtherEd:parsedData.furtherEd,
-            city:parsedData.city,
+            school: parsedData.school,
+            furtherEd: parsedData.furtherEd,
+            city: parsedData.city,
           },
         });
       }
@@ -61,7 +61,7 @@ export default class ClientController {
         Status = await prisma.self_employed.create({
           data: {
             clientId: client.clientId,
-            selfEmployed:parsedData.selfEmployed,
+            selfEmployed: parsedData.selfEmployed,
           },
         });
       }
@@ -69,14 +69,12 @@ export default class ClientController {
         Status = await prisma.searching.create({
           data: {
             clientId: client.clientId,
-            duration:parsedData.duration,
+            duration: parsedData.duration,
           },
         });
       }
       return res.status(201).json({
         message: "Client created successfully",
-        client,
-        status: Status ? Status : null,
       });
     } catch (error) {
       console.error(error);
@@ -226,27 +224,17 @@ export default class ClientController {
   static async updateClient(req: Request, res: Response): Promise<any> {
     try {
       const { clientId } = req.params;
-      const {
-        firstName,
-        lastName,
-        email,
-        phone,
-        educationId,
-        academicYear,
-        status,
-        title,
-        campany,
-        position,
-        startYear,
-        city,
-        school,
-        furtherEd,
-        selfEmployed,
-        duration,
-      }: ClientInput = Validation.ClientSchema.parse(req.body);
+      const validationResult = Validation.ClientSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          message: "Validation error",
+          errors: validationResult.error.format(),
+        });
+      }
+      const parsedData: ClientInput = Validation.ClientSchema.parse(req.body);
       const existingClient = await prisma.client.findFirst({
         where: {
-          email,
+          email: parsedData.email,
           NOT: {
             clientId: clientId,
           },
@@ -259,16 +247,16 @@ export default class ClientController {
         });
       }
 
-      const client = await prisma.client.update({
+      await prisma.client.update({
         where: { clientId },
         data: {
-          firstName,
-          lastName,
-          email,
-          phone: phone,
-          educationId,
-          academicYear,
-          Status: status as Status,
+          firstName: parsedData.firstName,
+          lastName: parsedData.lastName,
+          email: parsedData.email,
+          phone: parsedData.phone,
+          educationId: parsedData.educationId,
+          academicYear: parsedData.academicYear,
+          Status: parsedData.status as Status,
         },
       });
       await Promise.all([
@@ -278,48 +266,47 @@ export default class ClientController {
         prisma.searching.deleteMany({ where: { clientId } }),
       ]);
 
-      let Status;
-
-      if (status === "RECRUITED") {
-        Status = await prisma.recruited.create({
+      if (parsedData.status === "RECRUITED") {
+        await prisma.recruited.create({
           data: {
             clientId,
-            title,
-            campany,
-            position,
-            startYear,
-            workCity: city,
+            title: parsedData.title,
+            campany: parsedData.campany,
+            position: parsedData.position,
+            startYear: parsedData.startYear,
+            workCity: parsedData.workCity,
           },
         });
-      } else if (status === "FARTHER") {
-        Status = await prisma.further.create({
+      } else if (parsedData.status === "FARTHER") {
+        await prisma.further.create({
           data: {
             clientId,
-            school,
-            furtherEd,
-            city,
+            school: parsedData.school,
+            furtherEd: parsedData.furtherEd,
+            city: parsedData.city,
           },
         });
-      } else if (status === "EMPLOYED") {
-        Status = await prisma.self_employed.create({
+      } else if (parsedData.status === "EMPLOYED") {
+        await prisma.self_employed.create({
           data: {
             clientId,
-            selfEmployed,
+            selfEmployed: parsedData.selfEmployed,
           },
         });
-      } else if (status === "SEARCHING") {
-        Status = await prisma.searching.create({
+      } else if (parsedData.status === "SEARCHING") {
+        await prisma.searching.create({
           data: {
             clientId,
-            duration,
+            duration: parsedData.duration,
           },
+        });
+      } else {
+        return res.status(400).json({
+          message: "Invalid status",
         });
       }
-
       return res.status(200).json({
         message: "Client updated successfully",
-        client,
-        status: Status ? Status : null,
       });
     } catch (error) {
       console.error(error);
@@ -329,7 +316,7 @@ export default class ClientController {
   static async deleteClient(req: Request, res: Response): Promise<any> {
     try {
       const { clientId } = req.params;
-      const client = await prisma.client.update({
+      await prisma.client.update({
         where: { clientId },
         data: {
           deletedAt: new Date(),
@@ -337,7 +324,6 @@ export default class ClientController {
       });
       return res.status(200).json({
         message: "Client deleted successfully",
-        client,
       });
     } catch (error) {
       console.error(error);
